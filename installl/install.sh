@@ -1,3 +1,45 @@
+#!/bin/bash
+
+sudo apt update
+
+#####INSTALLATION du Navigateur et Serveur WEB
+sudo apt install -y surf nginx 
+
+#####INSTALLTION de Python3
+sudo  apt install -y python3 python3-pip python3-venv
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+
+echo "📚 5. Installation des dépendances depuis requirements.txt..."
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt
+    echo "✅ Dépendances installées avec succès !"
+else
+    echo "⚠️ Attention : Fichier requirements.txt introuvable à la racine."
+fi
+
+echo "🎉 Configuration Python terminée !"
+
+
+echo "Installation de NVM"
+
+#####INSTALLATION de nvm
+# 1. Téléchargement et exécution du script d'installation officiel de NVM (v0.39.7)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+# 2. Recharger le profil du terminal pour activer NVM immédiatement sans se déconnecter
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# 3. Vérification que NVM est bien installé
+echo "installation de NVM terminé version :"
+nvm --version
+
+######INSTALLATION de PIGPIO
+
 cat << 'EOF' > setup_pigpio.sh
 #!/bin/bash
 
@@ -67,3 +109,24 @@ EOF
 # Rendre le script exécutable et le lancer
 chmod +x setup_pigpio.sh
 ./setup_pigpio.sh
+
+
+######Déployer le serveur Web et lancer l'application
+
+#####Install les dependannce NPM
+npm install
+
+#####Compile la versions vers /dist
+npm run built
+
+#####Copie des fichiers a servir vers Nginx (/var/www/htm;)
+sudo cp -r ./dist/* /var/www/html/ 
+
+#####Redemmarage de Nginx
+sudo systemctl restart nginx
+
+#####Demarrage de l'interface
+cd ..
+sudo chmod +x ./startup.sh
+./startup.sh
+
