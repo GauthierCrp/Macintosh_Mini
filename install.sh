@@ -114,10 +114,10 @@ chmod +x setup_pigpio.sh
 ######Déployer le serveur Web et lancer l'application
 
 #####Install les dependannce NPM
-npm install
+sudo npm install
 
 #####Compile la versions vers /dist
-npm run built
+sudo npm run built
 
 #####Copie des fichiers a servir vers Nginx (/var/www/htm;)
 sudo cp -r ./dist/* /var/www/html/ 
