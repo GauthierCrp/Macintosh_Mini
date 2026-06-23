@@ -23,6 +23,52 @@ Ce projet permet de transformer un **Raspberry Pi (Zero 2W / Pi 4)** couplé à 
 
 ### 1. Cloner le projet
 Connectez-vous à votre Raspberry Pi en SSH ou ouvrez un terminal et récupérez le dépôt :
-```bash
-git clone [https://github.com/GauthierCrp/Macinstosh_Mini.git](https://github.com/GauthierCrp/Macinstosh_Mini.git)
-cd Macinstosh_Mini
+
+git clone https://github.com/GauthierCrp/Macintosh_Mini.git
+cd Macintosh_Mini
+
+### 2. Installer les packages système requis
+Le projet utilise des outils de manipulation de fenêtres X11 et de gestion des broches GPIO.
+
+sudo apt update
+sudo apt install xdotool xprop surf pigpio python3-pip -y
+
+### 3. Activer le démon pigpio
+Pour que le contrôle du PWM (GPIO 18) fonctionne via `pigs`, le démon doit être actif au démarrage :
+
+sudo systemctl enable pigpiod
+sudo systemctl start pigpiod
+
+---
+
+## 🔧 Configuration et Utilisation
+
+### Gestion de l'affichage (Kiosk & Auto-Kill)
+Le script `kill_surf.sh` permet de surveiller l'application Kiosk et de la couper proprement de manière événementielle (par exemple, suite à une action JavaScript émise par l'application web comme un triple-clic).
+
+Pour lancer le script de surveillance en arrière-plan :
+
+./kill_surf.sh &
+
+### Piloter le rétroéclairage (GPIO 18 / PWM)
+Si vous utilisez la bibliothèque `pigpio` (`pigs`), vous pouvez faire varier l'intensité de la broche 18 (PWM matériel lié à l'écran) :
+
+# Configurer la pin 18 en mode Écriture (Sortie)
+pigs m 18 w
+
+# Régler la luminosité à 50% (Valeur entre 0 et 255)
+pigs p 18 128
+
+# Éteindre complètement
+pigs w 18 0
+
+---
+
+## 📂 Structure du Dépôt
+
+* `kill_surf.sh` : Script Bash d'écoute et d'automatisation de fermeture de l'interface de la borne/Mac.
+
+---
+
+## 📜 Licence
+Ce projet est open-source. N'hésitez pas à le forker et à l'adapter à vos propres boîtiers de Mini-Mac !
