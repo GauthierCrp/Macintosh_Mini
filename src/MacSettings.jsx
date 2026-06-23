@@ -2,11 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CONFIG } from './config';
 
 const MacSettings = ({ enabledApps, toggleApp, isAutoCycle, setIsAutoCycle }) => {
-  const allKeys = ['autoCycle', 'paint', 'weather', 'clock', 'news', 'stats', 'playing', 'systemSettings', 'backToDesktop'];
+  // 1. AJOUT DE 'launchMac' EN TOUT PREMIER DANS LE TABLEAU DES CLÉS
+  const allKeys = ['launchMac', 'autoCycle', 'paint', 'weather', 'clock', 'news', 'stats', 'playing', 'systemSettings', 'backToDesktop'];
   const [activeIndex, setActiveIndex] = useState(0);
   const activeIndexRef = useRef(activeIndex);
 
+  // 2. CORRESPONDANCE DES LABELS
   const appLabels = {
+    launchMac: "------------- LANCER LE VRAI MAC (OS 7.5.3) --------------",
     autoCycle: "BASCULEMENT AUTOMATIQUE (KIOSK MODE)",
     paint: "APPLE PAINT (DESSIN)",
     weather: "APPLE WEATHER (MÉTÉO)",
@@ -19,6 +22,7 @@ const MacSettings = ({ enabledApps, toggleApp, isAutoCycle, setIsAutoCycle }) =>
   };
 
   const appIcons = {
+    launchMac: "🍏",
     autoCycle: "🔄",
     systemSettings: "⚙️",
     backToDesktop: "🏠"
@@ -39,7 +43,16 @@ const MacSettings = ({ enabledApps, toggleApp, isAutoCycle, setIsAutoCycle }) =>
     const handleSelect = () => {
       const currentKey = allKeys[activeIndexRef.current];
       
-      if (currentKey === 'autoCycle') {
+      // 3. ACTION QUAND ON VALIDE LA PREMIÈRE LIGNE
+      if (currentKey === 'launchMac') {
+        // Envoi de la requête à ton serveur Node.js pour exécuter le script de transition
+        fetch('http://localhost:5000/api/system', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'system', value: 'launch_basilisk' })
+        }).catch(err => console.error("Erreur serveur:", err));
+      } 
+      else if (currentKey === 'autoCycle') {
         setIsAutoCycle(prev => !prev);
       } else if (currentKey === 'systemSettings') {
         window.dispatchEvent(new CustomEvent('mac_switch_view', { detail: 'system_settings' }));
@@ -71,12 +84,15 @@ const MacSettings = ({ enabledApps, toggleApp, isAutoCycle, setIsAutoCycle }) =>
             {allKeys.map((key, index) => {
               const isFocused = index === activeIndex;
               const isChecked = key === 'autoCycle' ? isAutoCycle : enabledApps[key];
-              const isAppDisabled = key !== 'autoCycle' && key !== 'systemSettings' && key !== 'backToDesktop' && !enabledApps[key];
+              const isAppDisabled = key !== 'launchMac' && key !== 'autoCycle' && key !== 'systemSettings' && key !== 'backToDesktop' && !enabledApps[key];
               
               // Définitions précises des rôles de boutons
+              const isLaunchMacRow = key === 'launchMac';
               const isAutoCycleRow = key === 'autoCycle';
               const isSystemNav = key === 'systemSettings' || key === 'backToDesktop';
-              const isNavButton = isAutoCycleRow || isSystemNav;
+              
+              // Les boutons qui n'ont pas de case à cocher classique (juste du texte d'action ou de navigation)
+              const isNavButton = isLaunchMacRow || isAutoCycleRow || isSystemNav;
 
               return (
                 <div 
@@ -86,13 +102,14 @@ const MacSettings = ({ enabledApps, toggleApp, isAutoCycle, setIsAutoCycle }) =>
                     backgroundColor: isFocused ? '#000' : '#fff',
                     color: isFocused ? '#fff' : '#000',
                     border: isFocused ? '1px solid #000' : '1px solid transparent',
-                    borderBottom: isNavButton ? '2px double #000' : (isFocused ? '1px solid #000' : '1px transparent solid'),
+                    // Double bordure sous le lanceur Mac et le Kiosk Mode pour structurer le menu comme sur Mac Classic
+                    borderBottom: (isLaunchMacRow || isAutoCycleRow) ? '2px double #000' : (isSystemNav ? '2px double #000' : (isFocused ? '1px solid #000' : '1px transparent solid')),
                     marginTop: key === 'backToDesktop' ? 'auto' : '0px',
                     borderRadius: '2px'
                   }}
                 >
-                  {/* MODIFICATION : On affiche la checkbox si c'est une app classique OU le mode Kiosk */}
-                  {!isSystemNav ? (
+                  {/* Ne pas afficher de checkbox pour le Lanceur Mac et les sous-options système */}
+                  {!isSystemNav && !isLaunchMacRow ? (
                     <div style={{
                       ...styles.checkbox,
                       borderColor: isFocused ? '#fff' : '#000',
@@ -115,9 +132,8 @@ const MacSettings = ({ enabledApps, toggleApp, isAutoCycle, setIsAutoCycle }) =>
                     ...styles.appLabel, 
                     textDecoration: isAppDisabled ? 'line-through' : 'none',
                     fontWeight: isNavButton ? '900' : 'bold',
-                    marginLeft: isSystemNav ? '8px' : '0px'
+                    marginLeft: (isSystemNav || isLaunchMacRow) ? '8px' : '0px'
                   }}>
-                    {isAutoCycleRow && `${appIcons.autoCycle} `}
                     {appLabels[key]} 
                     {!isNavButton && ` (${CONFIG.system.intervals?.[key] || CONFIG.system.defaultInterval}s)`}
                   </span>
@@ -137,6 +153,7 @@ const MacSettings = ({ enabledApps, toggleApp, isAutoCycle, setIsAutoCycle }) =>
   );
 };
 
+// ... (les styles restent exactement identiques à ton fichier précédent)
 const styles = {
   container: { width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: '"Courier New", monospace', imageRendering: 'pixelated', userSelect: 'none', backgroundColor: '#fff' },
   window: { width: '540px', height: '460px', backgroundColor: '#fff', border: '2px solid #000', boxShadow: '6px 6px 0px #000', display: 'flex', flexDirection: 'column' },

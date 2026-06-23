@@ -32,6 +32,20 @@ def handle_system():
             subprocess.Popen(["pkill", "surf"])
             return jsonify({"status": "success", "message": "Fermeture de Surf"})
 
+        # --- AJOUT DU LANCEMENT DE BASILISKII ---
+        elif value == 'launch_basilisk':
+            print("Action : Lancement de l'émulateur BasiliskII...")
+            try:
+                # 1. Rendre le script exécutable au cas où et le lancer en bloquant (subprocess.run)
+                # On utilise shell=True pour que les commandes chaînées (&&) s'exécutent correctement
+                subprocess.run("chmod +x ./launch_basilisks.sh && ./launch_basilisks.sh", shell=True, check=True)
+                
+                print("Action : BasiliskII s'est arrêté, Surf a été relancé.")
+                return jsonify({"status": "success", "message": "Émulateur exécuté avec succès"})
+            except subprocess.SubprocessError as e:
+                print(f"Erreur lors du script de transition : {e}")
+                return jsonify({"status": "error", "message": f"Erreur script: {e}"}), 500
+
         elif value == 'reboot':
             print("Action : Redémarrage...")
             subprocess.Popen(["sudo", "/sbin/reboot"])

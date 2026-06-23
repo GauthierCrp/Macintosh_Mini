@@ -248,7 +248,6 @@ const styles = {
     fontFamily: '"Courier New", Courier, monospace',
     imageRendering: 'pixelated',
     userSelect: 'none',
-    backgroundColor: '#d4d6cd'
   },
   window: {
     width: '540px',
