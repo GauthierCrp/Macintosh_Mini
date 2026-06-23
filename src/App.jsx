@@ -7,17 +7,18 @@ import AppleClock from './AppleClock';
 import MacNews from './MacNews';
 import MacStat from './MacStat';
 import MacSettings from './MacSettings';
-import MacSystemSettings from './MacSystemSettings'; // 1. AJOUT DE L'IMPORT
+import MacSystemSettings from './MacSystemSettings';
 import MacNowPlaying from './MacNowPlaying';
 import { CONFIG } from './config';
 import logoMac from './logo_apple.png';
 
 const BACKGROUND_COLOR = '#f0f1ec'; 
+const LONG_PRESS_DURATION = 1500; 
 
 const App = () => {
   const [enabledApps, setEnabledApps] = useState({
     happy: true,
-    paint: true,
+    paint: false,
     weather: true,
     clock: true,
     news: true,
@@ -27,14 +28,19 @@ const App = () => {
   });
 
   const [currentView, setCurrentView] = useState('happy');
-  const clickTimeoutRef = useRef(null);
-  const doubleClickTimeoutRef = useRef(null);
   const viewOrder = ['happy', 'paint', 'weather', 'playing', 'clock', 'news', 'stats'];
+  
+  const longPressTimerRef = useRef(null);
+  const isLongPressRef = useRef(false);
+
+  const currentViewRef = useRef(currentView);
+  useEffect(() => {
+    currentViewRef.current = currentView;
+  }, [currentView]);
 
   // Gestion de l'état global du cycle automatique
-  const [isAutoCycle, setIsAutoCycle] = useState(false);
+  const [isAutoCycle, setIsAutoCycle] = useState(true);
   useEffect(() => {
-    // Désactivation du cycle si on est dans les menus de configuration OU du système
     if (!isAutoCycle || currentView === 'settings' || currentView === 'system_settings') return;
 
     const appDurationSeconds = CONFIG.system.intervals?.[currentView] || CONFIG.system.defaultInterval || 30;
@@ -46,15 +52,68 @@ const App = () => {
     return () => clearTimeout(timer);
   }, [isAutoCycle, currentView, enabledApps]);
 
-  // 2. ÉCOUTE DE L'ÉVÉNEMENT DE NAVIGATION DEPUIS MACSETTINGS
+  // Écoute de la navigation inter-vues
   useEffect(() => {
     const handleViewSwitch = (e) => {
-      if (e.detail === 'system_settings') {
+      const destination = e.detail;
+      if (destination === 'system_settings') {
         setCurrentView('system_settings');
+      } else if (destination === 'settings') {
+        setCurrentView('settings');
+      } else if (destination === 'desktop') {
+        setCurrentView('happy');
       }
     };
     window.addEventListener('mac_switch_view', handleViewSwitch);
     return () => window.removeEventListener('mac_switch_view', handleViewSwitch);
+  }, []);
+
+  // CONFIGURATION DES ÉCOUTEURS GLOBAUX SOURIS / TACTILE (Résout le blocage par les sous-apps)
+  useEffect(() => {
+    const handleGlobalPointerDown = (e) => {
+      if (e.target.closest('.mac-menu-bar')) return;
+
+      isLongPressRef.current = false;
+
+      longPressTimerRef.current = setTimeout(() => {
+        isLongPressRef.current = true;
+        
+        if (currentViewRef.current !== 'settings' && currentViewRef.current !== 'system_settings') {
+          setCurrentView('settings');
+        } else {
+          setCurrentView('happy');
+        }
+      }, LONG_PRESS_DURATION);
+    };
+
+    const handleGlobalPointerUp = (e) => {
+      if (e.target.closest('.mac-menu-bar')) return;
+
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+
+      if (!isLongPressRef.current) {
+        if (currentViewRef.current !== 'settings' && currentViewRef.current !== 'system_settings') {
+          triggerNextView();
+        } else {
+          window.dispatchEvent(new CustomEvent('mac_trigger_select'));
+        }
+      }
+    };
+
+    // Attachement au plus haut niveau (window) capturant tout
+    window.addEventListener('mousedown', handleGlobalPointerDown, true);
+    window.addEventListener('mouseup', handleGlobalPointerUp, true);
+    window.addEventListener('touchstart', handleGlobalPointerDown, true);
+    window.addEventListener('touchend', handleGlobalPointerUp, true);
+
+    return () => {
+      window.removeEventListener('mousedown', handleGlobalPointerDown, true);
+      window.removeEventListener('mouseup', handleGlobalPointerUp, true);
+      window.removeEventListener('touchstart', handleGlobalPointerDown, true);
+      window.removeEventListener('touchend', handleGlobalPointerUp, true);
+    };
   }, []);
 
   const toggleApp = (appKey) => {
@@ -62,7 +121,7 @@ const App = () => {
   };
 
   const triggerNextView = () => {
-    if (currentView === 'settings' || currentView === 'system_settings') return;
+    if (currentViewRef.current === 'settings' || currentViewRef.current === 'system_settings') return;
     setCurrentView(prevView => {
       let currentIndex = viewOrder.indexOf(prevView);
       if (currentIndex === -1) currentIndex = 0; 
@@ -73,42 +132,6 @@ const App = () => {
       }
       return viewOrder[nextIndex];
     });
-  };
-
-  const handleGlobalClick = (e) => {
-    if (e.target.closest('.mac-menu-bar')) return;
-
-    // --- 1. GESTION DU SIMPLE CLIC ---
-    if (clickTimeoutRef.current === null && e.detail === 1) {
-      clickTimeoutRef.current = setTimeout(() => {
-        clickTimeoutRef.current = null;
-        
-        if (currentView !== 'settings' && currentView !== 'system_settings') {
-          triggerNextView();
-        } else {
-          window.dispatchEvent(new CustomEvent('mac_trigger_select'));
-        }
-      }, 800);
-    } 
-    
-    // --- 2. GESTION DU DOUBLE CLIC ---
-    else if (e.detail === 2) {
-      if (clickTimeoutRef.current) {
-        clearTimeout(clickTimeoutRef.current);
-        clickTimeoutRef.current = null;
-      }
-      doubleClickTimeoutRef.current = setTimeout(() => {
-        doubleClickTimeoutRef.current = null;
-        
-        if (currentView === 'happy') {
-          setCurrentView('settings');
-        } else if (currentView === 'settings') {
-          setCurrentView('happy'); 
-        } else if (currentView === 'system_settings') {
-          setCurrentView('settings');
-        }
-      }, 800);
-    }
   };
 
   const closeSettings = () => {
@@ -139,7 +162,6 @@ const App = () => {
           />
         );
 
-      // 3. RENDER DE LA NOUVELLE VUE OPTIONS SYSTÈME
       case 'system_settings':
         return <MacSystemSettings {...sharedProps} />;
 
@@ -149,7 +171,6 @@ const App = () => {
 
   return (
     <div 
-      onClick={handleGlobalClick} 
       style={{ 
         width: '100vw', 
         height: '100vh', 
@@ -165,9 +186,10 @@ const App = () => {
       <div className="mac-menu-bar" style={styles.menuBar}>
         <div style={styles.menuLeft}>
           <img src={logoMac} alt="Logo" style={styles.appleLogo} />
+          <span style={styles.menuItem} onClick={() => setCurrentView('settings')}></span>
           <span style={styles.menuItem}>Fichier</span>
           <span style={styles.menuItem}>Édition</span>
-          <span style={styles.menuItem}>Spécial</span>
+          <span style={styles.menuItem} onClick={() => setCurrentView('settings')}>Spécial</span>
         </div>
         <div style={styles.menuRight}>
           <span style={styles.menuItem}>
