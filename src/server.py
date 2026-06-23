@@ -38,7 +38,7 @@ def handle_system():
             try:
                 # 1. Rendre le script exécutable au cas où et le lancer en bloquant (subprocess.run)
                 # On utilise shell=True pour que les commandes chaînées (&&) s'exécutent correctement
-                subprocess.run("chmod +x ./launch_basilisks.sh && ./launch_basilisks.sh", shell=True, check=True)
+                subprocess.run("chmod +x ./launch_basilisk.sh && ./launch_basilisk.sh", shell=True, check=True)
                 
                 print("Action : BasiliskII s'est arrêté, Surf a été relancé.")
                 return jsonify({"status": "success", "message": "Émulateur exécuté avec succès"})
