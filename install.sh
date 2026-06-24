@@ -43,10 +43,10 @@ export NVM_DIR="$HOME/.nvm"
 echo "✅ Installation de NVM terminée. Version :"
 nvm --version
 
-echo "🟢 7. Installation de Node.js v18 (Version légère recommandée)..."
-nvm install 18
-nvm use 18
-nvm alias default 18
+echo "🟢 7. Installation de Node.js v20 (Version légère recommandée)..."
+nvm install 20
+nvm use 20
+nvm alias default 20
 
 echo "✅ Vérification de NPM. Version :"
 npm --version
@@ -143,7 +143,14 @@ if [[ "$response" =~ ^(yes|y)$ ]]; then
         CONFIG_FILE="/boot/config.txt"
     fi
 
-    # 2. Injection propre du bloc officiel à la fin du fichier
+    # 2. Téléchargement et Copies de pilotes de l'écran
+    sudo wget https://cloud.crepely.fr/index.php/s/MGTiGNrFy66ro6L/download
+    tar -xvf download
+    sudo cp ./28DPI-DTBO/* /boot/firmware/overlays/
+    sudo rm -rf 28DPI-DTBO
+    sudo rm -rf download
+
+    # 3. Injection propre du bloc officiel à la fin du fichier
     sudo tee -a "$CONFIG_FILE" > /dev/null << 'EOF'
 
 # ==============================================================================

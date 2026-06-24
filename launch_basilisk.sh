@@ -20,4 +20,4 @@ export LD_LIBRARY_PATH="$BASILISK_APP_DIR/libs:$LD_LIBRARY_PATH"
 DISPLAY=:0 "$BASILISK_APP_DIR/BasiliskII" --config "$EMU_DIR/MacLCIII_OS7.5.3.prefs"
 
 # 4. Relancer Surf une fois l'émulateur quitté
-DISPLAY=:0 surf -F http://localhost:3000 &
+DISPLAY=:0 surf -F http://localhost &

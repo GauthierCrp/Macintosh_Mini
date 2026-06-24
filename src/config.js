@@ -1,6 +1,7 @@
 // src/config.js
 
 export const CONFIG = {
+
   // 1. MONITORING SYSTEME (Glances - Utilisé par MacStat.jsx)
 glances: {
     serverIp: "10.194.6.220",
@@ -10,6 +11,7 @@ glances: {
     },
     refreshIntervalMs: 5000
   },
+
 
   // 2. SERVEUR AUDIO (Music Assistant - Utilisé par MacNowPlaying.jsx)
   musicAssistant: {
@@ -22,6 +24,7 @@ glances: {
     }
   },
 
+
   // 3. ENVIRONNEMENT & METEO (Bruz / Région Rennaise - Utilisé par AppleWeather.jsx)
   weather: {
     cityName: "RENNES", // Ville affichée par défaut
@@ -31,6 +34,7 @@ glances: {
     baseUrl: "https://api.open-meteo.com/v1/forecast"
   },
 
+  
 // 4. FLUX D'ACTUALITES (RSS - Utilisé par MacNews.jsx)
   news: {
     rssUrl: "https://www.lemonde.fr/international/rss_full.xml",
