@@ -127,6 +127,44 @@ cd "$PROJECT_ROOT"
 
 export LD_LIBRARY_PATH="$PROJECT_ROOT/mac_emu/BasiliskII_app/libs:$LD_LIBRARY_PATH"
 
+echo "📺 11. Configuration matérielle de l'écran Waveshare 2.8\" DPI..."
+
+# Pose la question à l'utilisateur (Y/n)
+read -p "❓ Souhaitez-vous installer les pilotes de l'écran Waveshare 2.8\" DPI ? (y/N) : " response
+
+# Convertit la réponse en minuscules pour accepter 'Y' ou 'y'
+response=$(echo "$response" | tr '[:upper:]' '[:lower:]')
+
+if [[ "$response" =~ ^(yes|y)$ ]]; then
+    # 1. Détermination dynamique du chemin du fichier config.txt
+    if [ -f "/boot/firmware/config.txt" ]; then
+        CONFIG_FILE="/boot/firmware/config.txt"
+    else
+        CONFIG_FILE="/boot/config.txt"
+    fi
+
+    # 2. Injection propre du bloc officiel à la fin du fichier
+    sudo tee -a "$CONFIG_FILE" > /dev/null << 'EOF'
+
+# ==============================================================================
+# CONFIGURATION MATÉRIELLE ÉCRAN WAVESHARE 2.8" DPI
+# ==============================================================================
+[all]
+enable_uart=1
+dtoverlay=vc4-kms-v3d
+dtoverlay=waveshare-28dpi-3b-4b
+dtoverlay=waveshare-28dpi-3b
+dtoverlay=waveshare-28dpi-4b
+dtoverlay=waveshare-touch-28dpi
+dtoverlay=vc4-kms-dpi-2inch8
+dtoverlay=gpio-pwm,pin=18,func=2
+EOF
+
+    echo "✅ Lignes de configuration ajoutées avec succès dans $CONFIG_FILE !"
+    echo "⚠️  Note : Un redémarrage complet sera nécessaire (sudo reboot)."
+else
+    echo "⏭️  Configuration de l'écran ignorée."
+fi
 
 echo "🚀 9. Déploiement du serveur Web et lancement de l'application..."
 
