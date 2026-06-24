@@ -13,7 +13,7 @@ echo "🌐 2. Installation du Navigateur (Surf) et du Serveur WEB (Nginx)..."
 sudo apt install -y surf nginx 
 
 echo "📦 3. Installation de Python 3 et de ses outils d'environnement..."
-sudo apt install -y python3 python3-pip python3-venv
+sudo apt install -y python3 python3-pip python3-venv libsdl2-2.0-0 libx11-6 libxext6
 
 echo "📁 4. Création et configuration de l'environnement virtuel (.venv)..."
 python3 -m venv .venv
@@ -27,7 +27,7 @@ if [ -f "requirements.txt" ]; then
 else
     echo "⚠️ Attention : Fichier requirements.txt introuvable à la racine."
 fi
-
+deactivate
 echo "🎉 Configuration Python terminée !"
 
 
@@ -116,9 +116,15 @@ echo "Télechargement du fichier de Configuration BasiliskII"
 wget https://cloud.crepely.fr/index.php/s/LHnyRKWHt2954fm/download
 cp download MacLCIII_OS7.5.3.prefs
 rm download
-chmod +x ~/Macintosh_Mini/mac_emu/BasiliskII_app/BasiliskII
-chmod +x ~/Macintosh_Mini/launch_basilisk.sh
+
+# Application des droits d'exécution (en sécurisant le chemin via PROJECT_ROOT)
+chmod +x "$PROJECT_ROOT/mac_emu/BasiliskII_app/BasiliskII"
+if [ -f "$PROJECT_ROOT/launch_basilisk.sh" ]; then
+    chmod +x "$PROJECT_ROOT/launch_basilisk.sh"
+fi
+
 cd "$PROJECT_ROOT"
+
 export LD_LIBRARY_PATH="$PROJECT_ROOT/mac_emu/BasiliskII_app/libs:$LD_LIBRARY_PATH"
 
 
@@ -140,11 +146,14 @@ sudo cp -r ./dist/* /var/www/html/
 echo "🔄 Redémarrage de Nginx..."
 sudo systemctl restart nginx
 
-echo "🖥️ Préparation et exécution du script de démarrage de la borne..."
+echo "🖥️ Lancement du script de démarrage de la borne..."
 if [ -f "./startup.sh" ]; then
     sudo chmod +x ./startup.sh
-    ./startup.sh
+    # Lancement en tâche de fond pour permettre au script d'installation de finir proprement
+    ./startup.sh & 
 else
-    echo "❌ Erreur : ./startup.sh introuvable à la racine de la borne."
+    echo "❌ Erreur : ./startup.sh introuvable."
     exit 1
 fi
+
+echo "🏁 [SUCCESS] Installation et déploiement terminés avec succès !"
