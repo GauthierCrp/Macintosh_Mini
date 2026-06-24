@@ -52,48 +52,30 @@ echo "✅ Vérification de NPM. Version :"
 npm --version
 
 
-echo "🔩 8. Configuration et compilation de PIGPIO..."
-cat << 'EOF' > setup_pigpio.sh
-#!/bin/bash
+echo "🔩 8. Déploiement de PIGPIO pré-compilé (Spécial Debian Trixie)..."
 
-# Couleurs pour le suivi dans le terminal
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# 1. Télechargement des fichiers pré-compilés pour Raspberry Pi2w
+wget https://cloud.crepely.fr/index.php/s/yAnGaSWGN3gtK9i/download
+tar -xvf download
+rm -rf download
 
-echo -e "${GREEN}[1/5] Mise à jour des paquets et installation des outils de build...${NC}"
-sudo apt update
-sudo apt install -y build-essential wget unzip
+echo "🛑 Arrêt du démon pigpiod existant pour libérer le fichier..."
+sudo systemctl stop pigpiod 2>/dev/null || true
+sudo pkill -9 pigpiod 2>/dev/null || true
 
-echo -e "${GREEN}[2/5] Nettoyage et désactivation de rgpiod (conflit potentiel)...${NC}"
-sudo systemctl stop rgpiod 2>/dev/null || true
-sudo systemctl disable rgpiod 2>/dev/null || true
+# 1. Copie des binaires vers les dossiers système
+sudo cp ./pigpio_bin/pigpiod /usr/local/bin/
+sudo cp ./pigpio_bin/pigs /usr/local/bin/
+sudo cp ./pigpio_bin/libpigpio.so /usr/local/lib/
 
-echo -e "${GREEN}[3/5] Vérification et récupération de pigpio V79...${NC}"
-cd ~
+# 2. Rendre les binaires exécutables
+sudo chmod +x /usr/local/bin/pigpiod
+sudo chmod +x /usr/local/bin/pigs
 
-if [ -f "pigpio-v79.tar.gz" ]; then
-    echo -e "${YELLOW}-> L'archive pigpio-v79.tar.gz est déjà présente localement. Téléchargement ignoré.${NC}"
-else
-    echo -e "-> Téléchargement de la version 79 officielle..."
-    wget https://github.com/joan2937/pigpio/archive/v79.tar.gz -O pigpio-v79.tar.gz
-fi
+# 3. Forcer le système à prendre en compte la nouvelle bibliothèque .so
+sudo ldconfig
 
-# Nettoyage d'un ancien dossier d'extraction pour repartir sur du propre
-if [ -d "pigpio-79" ]; then
-    rm -rf pigpio-79
-fi
-
-echo -e "-> Extraction de l'archive..."
-tar -xzvf pigpio-v79.tar.gz
-cd pigpio-79
-
-echo -e "${GREEN}[4/5] Compilation et installation (cela peut prendre 1 à 2 minutes)...${NC}"
-make
-sudo make install
-
-echo -e "${GREEN}[5/5] Configuration et activation du service pigpiod au démarrage...${NC}"
-# Création d'un service Systemd propre pour lancer pigpiod avec les accès étendus (-x -1)
+# 4. Création et configuration du service Systemd avec tes arguments (-x -1)
 sudo tee /etc/systemd/system/pigpiod.service > /dev/null << 'SERVICE'
 [Unit]
 Description=Daemon required for pigpio
@@ -107,22 +89,37 @@ Type=forking
 WantedBy=multi-user.target
 SERVICE
 
-# Rechargement et activation du service
+# 5. Activation et démarrage du service
 sudo systemctl daemon-reload
 sudo systemctl enable pigpiod
 sudo systemctl start pigpiod
 
-echo -e "${GREEN}====================================================${NC}"
-echo -e "${GREEN} Installation pigpio terminée avec succès !         ${NC}"
-echo -e "${GREEN}====================================================${NC}"
-EOF
+echo "✅ PIGPIO déployé et démarré !"
 
-# Rendre le script pigpio exécutable et le lancer
-chmod +x setup_pigpio.sh
-./setup_pigpio.sh
-
-# Nettoyage du sous-script temporaire
-rm setup_pigpio.sh
+# Téléchargement et Installation de l'émulateur MacOS
+echo "Création des Répertoires"
+mkdir mac_emu
+mkdir mac_emu/DISK mac_emu/ROM mac_emu/APP
+cd mac_emu
+echo "Téléchargement de la ROM"
+wget https://cloud.crepely.fr/index.php/s/Yomrc8jQgQRwrPe/download
+mv download ./ROM/Mac_LCIII.ROM
+echo "Téléchargement de l'image disque MacOS 7.5.3"
+wget https://cloud.crepely.fr/index.php/s/k8Yw3cjxCRorS7M/download
+cp download ./DISK/DISK1.DSK
+rm download
+echo "Télécharment du Binaire Pré-compilé de BasiliskII pour PI Zero 2w"
+wget https://cloud.crepely.fr/index.php/s/iLswzTxRd3Dfgrf/download
+tar -xvf download
+rm download
+echo "Télechargement du fichier de Configuration BasiliskII"
+wget https://cloud.crepely.fr/index.php/s/LHnyRKWHt2954fm/download
+cp download MacLCIII_OS7.5.3.prefs
+rm download
+chmod +x ~/Macintosh_Mini/mac_emu/BasiliskII_app/BasiliskII
+chmod +x ~/Macintosh_Mini/launch_basilisk.sh
+cd "$PROJECT_ROOT"
+export LD_LIBRARY_PATH="$PROJECT_ROOT/mac_emu/BasiliskII_app/libs:$LD_LIBRARY_PATH"
 
 
 echo "🚀 9. Déploiement du serveur Web et lancement de l'application..."
